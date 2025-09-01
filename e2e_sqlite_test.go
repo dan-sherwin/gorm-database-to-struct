@@ -52,7 +52,8 @@ func TestEndToEndSQLite(t *testing.T) {
 			datetime_col DATETIME,
 			ts_col TIMESTAMP,
 			numeric_col NUMERIC,
-			decimal_col DECIMAL
+			decimal_col DECIMAL,
+			duration_col DURATION
 		);`,
 		// second table to exercise relation via ExtraFields (one-to-many)
 		`CREATE TABLE IF NOT EXISTS child (
@@ -170,26 +171,52 @@ SqlitedDbPath = %q
 	mainGo := fmt.Sprintf(`package main
 import (
   "fmt"
+  "time"
   g "%s/%s"
   m "%s/%s/models"
 )
 func main(){
   g.DbInit(%q)
   // Insert
-  a := &m.%s{TextCol: ptrStr("hello")}
+  a := &m.%s{BoolCol: ptrBool(true), Tiny1: ptrStr("1"), IntCol: ptrI64(42), BigCol: ptrI64(4200), RealCol: ptrF64(1.5), DoubleCol: ptrF64(2.5), FloatCol: ptrF32(3.5), TextCol: ptrStr("hello"), VarcharCol: ptrStr("v"), CharCol: ptrStr("c"), BlobCol: ptrBytes([]byte{1,2,3}), DateCol: ptrTime(1700000000), DatetimeCol: ptrTime(1700000100), TsCol: ptrTime(1700000200), NumericCol: ptrF64(10.5), DecimalCol: ptrF64(20.5), DurationCol: ptrDur(1234567890)}
   if err := g.DB.Create(a).Error; err != nil { panic(err) }
   // Read
   var got m.%s
   if err := g.DB.First(&got, a.ID).Error; err != nil { panic(err) }
-  // Update
-  s := "world"
-  if err := g.DB.Model(&got).Update("text_col", &s).Error; err != nil { panic(err) }
+  // Update each field
+  b := false
+  if err := g.DB.Model(&got).Updates(map[string]any{
+    "bool_col": &b,
+    "tiny1": ptrStr("0"),
+    "int_col": ptrI64(43),
+    "big_col": ptrI64(4300),
+    "real_col": ptrF64(9.5),
+    "double_col": ptrF64(8.5),
+    "float_col": ptrF32(7.5),
+    "text_col": ptrStr("world"),
+    "varchar_col": ptrStr("vv"),
+    "char_col": ptrStr("cc"),
+    "blob_col": ptrBytes([]byte{9,8,7}),
+    "date_col": ptrTime(1700001000),
+    "datetime_col": ptrTime(1700001100),
+    "ts_col": ptrTime(1700001200),
+    "numeric_col": ptrF64(11.5),
+    "decimal_col": ptrF64(21.5),
+    "duration_col": ptrDur(987654321),
+  }).Error; err != nil { panic(err) }
   var after m.%s
   if err := g.DB.First(&after, a.ID).Error; err != nil { panic(err) }
-  if after.TextCol == nil || *after.TextCol != s { panic(fmt.Sprintf("unexpected text: %%v", after.TextCol)) }
+  if after.TextCol == nil || *after.TextCol != "world" { panic(fmt.Sprintf("unexpected text: %%v", after.TextCol)) }
   fmt.Print("OK")
 }
 func ptrStr(s string)*string{ return &s }
+func ptrI64(v int64)*int64{ return &v }
+func ptrF64(v float64)*float64{ return &v }
+func ptrF32(v float32)*float32{ return &v }
+func ptrBool(v bool)*bool{ return &v }
+func ptrBytes(b []byte)*[]byte{ return &b }
+func ptrTime(sec int64)*time.Time{ t:=time.Unix(sec,0); return &t }
+func ptrDur(n int64)*time.Duration{ d:=time.Duration(n); return &d }
 `, modulePath(t), pkgBase, modulePath(t), pkgBase, dbPath, modelType, modelType, modelType)
 	if err := os.WriteFile(filepath.Join(cmdDir, "main.go"), []byte(mainGo), 0o644); err != nil {
 		t.Fatal(err)
