@@ -14,16 +14,15 @@ Where `$basearch` is either `x86_64` or `aarch64`.
   3. Publishes the shared/yum directory to the user Pages repo (dan-sherwin/dan-sherwin.github.io) gh-pages branch.
   4. GitHub Pages must be enabled for dan-sherwin.github.io with Source: gh-pages.
 
-- GitHub Pages must be enabled for this repository (Settings → Pages → Build from `gh-pages`).
 
 ## Client setup
 
-Users can install via DNF by creating `/etc/yum.repos.d/gormdb2struct.repo`:
+Users can install via DNF by creating `/etc/yum.repos.d/dan-sherwin.repo`:
 
 ```
-[gormdb2struct]
-name=gormdb2struct
-baseurl=https://dan-sherwin.github.io/gormdb2struct/rpm/$basearch/
+[dan-sherwin]
+name=dan-sherwin packages
+baseurl=https://dan-sherwin.github.io/yum/rpm/$basearch/
 enabled=1
 gpgcheck=0
 ```
