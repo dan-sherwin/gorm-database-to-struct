@@ -2,6 +2,10 @@ name: Publish Shared YUM Repo
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g., v0.1.1). If empty and triggered on a release, uses that release tag.'
+        required: false
   release:
     types: [published]
 
@@ -17,11 +21,26 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "value=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fail if tag is empty on manual run
+        if: ${{ github.event_name == 'workflow_dispatch' && steps.tag.outputs.value == '' }}
+        run: |
+          echo "Error: tag input is required when manually triggering the workflow."
+          exit 1
+
       - name: Download release RPM assets
         uses: robinraju/release-downloader@v1.11
         with:
           repository: ${{ github.repository }}
-          tag: ${{ github.event.release.tag_name }}
+          tag: ${{ steps.tag.outputs.value }}
           fileName: "gormdb2struct_*_linux_*.rpm"
           out-file-path: dist_rpms
 
@@ -36,16 +55,20 @@ jobs:
           for f in dist_rpms/*linux_arm64.rpm; do cp -v "$f" shared/yum/rpm/aarch64/; done
           createrepo_c shared/yum/rpm/x86_64
           createrepo_c shared/yum/rpm/aarch64
+          # Optional: minimal indexes for human browsing (DNF does not need these)
+          echo "<h1>yum</h1>" > shared/yum/index.html
+          echo "<h1>x86_64</h1>" > shared/yum/rpm/x86_64/index.html
+          echo "<h1>aarch64</h1>" > shared/yum/rpm/aarch64/index.html
 
-      - name: Publish to user Pages repo (dan-sherwin.github.io)
+      - name: Publish to user Pages repo (dan-sherwin.github.io main branch)
         uses: peaceiris/actions-gh-pages@v4
         with:
           external_repository: dan-sherwin/dan-sherwin.github.io
           publish_dir: shared
-          publish_branch: gh-pages
+          publish_branch: main
           personal_token: ${{ secrets.GH_PAGES_TOKEN }}
           keep_files: true
 
       - name: Output repo URL
         run: |
-          echo "Shared Yum repo published to: https://dan-sherwin.github.io/yum/rpm/$basearch/"
+          echo "Shared Yum repo published to: https://dan-sherwin.github.io/yum/rpm/\$basearch/"
