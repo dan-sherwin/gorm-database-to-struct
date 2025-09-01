@@ -1,0 +1,76 @@
+# GoReleaser configuration for gormdb2struct
+# See: https://goreleaser.com/
+
+project_name: gormdb2struct
+
+dist: dist
+
+before:
+  hooks:
+    - go mod tidy
+
+# Build the CLI for multiple OS/arch with version info via ldflags
+builds:
+  - id: cli
+    main: .
+    binary: gormdb2struct
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ .Date }}
+    flags:
+      - -trimpath
+
+# Package archives and include common files
+archives:
+  - id: archives
+    # name template will include OS/Arch automatically
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^chore:'
+
+# Create RPM packages (dnf/yum) using nfpm
+nfpms:
+  - id: rpm
+    package_name: gormdb2struct
+    file_name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    homepage: https://github.com/dan-sherwin/gormdb2struct
+    description: Generate strongly typed GORM models and query helpers from your database schema.
+    maintainer: Dan Sherwin
+    license: MIT
+    vendor: Dan Sherwin
+    formats:
+      - rpm
+    bindir: /usr/bin
+    contents:
+      - src: ./dist/{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}/gormdb2struct
+        dst: /usr/bin/gormdb2struct
+        type: file
+        mode: 0755
+    rpm:
+      summary: GORM database-to-struct generator
+      group: Development/Tools
+    dependencies:
+      - glibc
+
+release:
+  draft: false
+  prerelease: '{{ if .Prerelease }}true{{ else }}false{{ end }}'

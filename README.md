@@ -49,21 +49,21 @@ It’s configuration-driven via a TOML file and suitable for CI/CD use.
 Requires Go 1.22+.
 
 - Install directly into your GOPATH/bin (or GOBIN):
-  - go install github.com/dan-sherwin/gorm-database-to-struct@latest
+  - go install github.com/dan-sherwin/gormdb2struct@latest
 
 You can also run directly via `go run` for quick use, or build a binary for reuse:
 
 - Use directly via `go run` from a clone:
-  - git clone https://github.com/dan-sherwin/gorm-database-to-struct.git
-  - cd gorm-database-to-struct
+  - git clone https://github.com/dan-sherwin/gormdb2struct.git
+  - cd gormdb2struct
   - go run . -generateConfigSample
-  - Edit the generated `gorm-database-to-struct-sample.toml`
+  - Edit the generated `gormdb2struct-sample.toml`
   - go run . ./path/to/your-config.toml
 
 - Or build the binary:
-  - go build -o gorm-database-to-struct .
-  - ./gorm-database-to-struct -generateConfigSample
-  - ./gorm-database-to-struct ./path/to/your-config.toml
+  - go build -o gormdb2struct .
+  - ./gormdb2struct -generateConfigSample
+  - ./gormdb2struct ./path/to/your-config.toml
 
 ---
 
@@ -73,7 +73,7 @@ You can also run directly via `go run` for quick use, or build a binary for reus
 
 ```
 $ go run . -generateConfigSample
-Sample config written to gorm-database-to-struct-sample.toml
+Sample config written to gormdb2struct-sample.toml
 ```
 
 2) Edit the TOML to match your environment (see Configuration below).
@@ -81,7 +81,7 @@ Sample config written to gorm-database-to-struct-sample.toml
 3) Run the generator:
 
 ```
-$ go run . ./gorm-database-to-struct-sample.toml
+$ go run . ./gormdb2struct-sample.toml
 ```
 
 4) Your generated code will appear under `OutPath` (e.g., `./generated`).
@@ -116,7 +116,7 @@ Advanced options:
 Sample config:
 
 ```
-# gorm-database-to-struct configuration
+# gormdb2struct configuration
 # OutPath: directory where generated files are written (models, query, db init)
 OutPath = "./generated"
 
@@ -134,7 +134,7 @@ CleanUp = true
 
 # ImportPackagePaths: extra imports to include in generated code (optional)
 ImportPackagePaths = [
-  "github.com/dan-sherwin/gorm-database-to-struct/pgtypes",
+  "github.com/dan-sherwin/gormdb2struct/pgtypes",
 ]
 
 # TypeMap: database column type overrides (optional)
@@ -270,3 +270,30 @@ Issues and pull requests are welcome. Please include clear reproduction steps or
 ## Screenshots / Examples
 
 Contributions of example outputs or screenshots of generated structs and query helpers are welcome! Please share examples to help others understand the generated code structure and usage.
+
+
+---
+
+## Releases and Packages
+
+This project uses GoReleaser to publish binaries for Linux, macOS (darwin), and Windows, for both amd64 and arm64, whenever you push a tag (vX.Y.Z).
+
+- Download prebuilt archives from the GitHub Releases page for your OS/arch.
+- Checksums (checksums.txt) are attached to each release.
+- Version metadata (version/commit/date) is embedded and visible via `gormdb2struct -version`.
+
+### Install via dnf/yum (RPM)
+
+Releases also include RPM packages built with nfpm.
+
+- Download the appropriate .rpm from the Release matching your OS/arch, then install:
+
+```
+sudo dnf install ./gormdb2struct_<version>_linux_amd64.rpm
+# or on RHEL/CentOS with yum
+sudo yum install ./gormdb2struct_<version>_linux_amd64.rpm
+```
+
+This installs the binary at /usr/bin/gormdb2struct.
+
+If you want to set up a repository for automatic updates, host the RPMs and metadata in your own repo server and configure /etc/yum.repos.d accordingly.

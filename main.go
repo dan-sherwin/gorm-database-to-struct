@@ -54,13 +54,19 @@ const (
 )
 
 var (
+	// These variables are set via -ldflags at build time, for example:
+	//   go build -ldflags "-X main.version=v0.1.0 -X main.commit=$(git rev-parse --short HEAD) -X main.date=2025-09-01T08:38:00"
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+
 	conversionConfig = ConversionConfig{
 		TypeMap: map[string]string{
 			"jsonb": "datatypes.JSONMap",
 			"uuid":  "datatypes.UUID",
 		},
 		ImportPackagePaths: []string{
-			"github.com/dan-sherwin/gorm-database-to-struct/pgtypes",
+			"github.com/dan-sherwin/gormdb2struct/pgtypes",
 		},
 	}
 	//extraFields    = map[string][]ExtraField{
@@ -87,17 +93,22 @@ func usage(exitCode int, errMsg string) {
 	if strings.TrimSpace(errMsg) != "" {
 		fmt.Fprintf(os.Stderr, "Error: %s\n\n", errMsg)
 	}
-	fmt.Fprintf(os.Stderr, "Usage:\n  %s <config.toml>\n  %s -generateConfigSample\n\n", prog, prog)
+	fmt.Fprintf(os.Stderr, "Usage:\n  %s <config.toml>\n  %s -generateConfigSample\n  %s -version | --version\n\n", prog, prog, prog)
 	fmt.Fprintln(os.Stderr, "Description:")
 	fmt.Fprintln(os.Stderr, "  Generates GORM models and optional DB initializer code from an existing database.")
 	fmt.Fprintln(os.Stderr, "  Provide a TOML configuration file describing the database and generation options.")
-	fmt.Fprintln(os.Stderr, "  Use -generateConfigSample to write a sample configuration file named 'gorm-database-to-struct-sample.toml' in the current directory.")
+	fmt.Fprintln(os.Stderr, "  Use -generateConfigSample to write a sample configuration file named 'gormdb2struct-sample.toml' in the current directory.")
 	os.Exit(exitCode)
 }
 
 func main() {
+	// Handle version flags early
+	if len(os.Args) == 2 && (os.Args[1] == "-version" || os.Args[1] == "--version") {
+		fmt.Fprintf(os.Stdout, "version: %s\ncommit: %s\ndate: %s\n", version, commit, date)
+		return
+	}
 	if len(os.Args) == 2 && os.Args[1] == "-generateConfigSample" {
-		out := "gorm-database-to-struct-sample.toml"
+		out := "gormdb2struct-sample.toml"
 		if err := os.WriteFile(out, []byte(sampleConfigTOML()), 0644); err != nil {
 			usage(2, fmt.Sprintf("failed to write sample config to %s: %v", out, err))
 		}
@@ -217,7 +228,7 @@ func genRelationField(ef *ExtraField, fld gen.Field) {
 }
 
 func sampleConfigTOML() string {
-	return `# gorm-database-to-struct configuration
+	return `# gormdb2struct configuration
 # OutPath: directory where generated files are written (models, query, db init)
 OutPath = "./generated"
 
@@ -235,7 +246,7 @@ CleanUp = true
 
 # ImportPackagePaths: extra imports to include in generated code (optional)
 ImportPackagePaths = [
-  "github.com/dan-sherwin/gorm-database-to-struct/pgtypes",
+  "github.com/dan-sherwin/gormdb2struct/pgtypes",
 ]
 
 # TypeMap: database column type overrides (optional)

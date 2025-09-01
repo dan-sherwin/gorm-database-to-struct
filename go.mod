@@ -1,4 +1,4 @@
-module github.com/dan-sherwin/gorm-database-to-struct
+module github.com/dan-sherwin/gormdb2struct
 
 go 1.23.0
 
