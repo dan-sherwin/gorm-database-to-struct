@@ -46,6 +46,16 @@ It’s configuration-driven via a TOML file and suitable for CI/CD use.
 
 ## Install
 
+Using DNF/YUM (RPM):
+- Add the repo file to your system:
+  - `sudo dnf config-manager --add-repo https://dan-sherwin.github.io/dan-sherwin.repo`
+- Install the package:
+  - `sudo dnf install gormdb2struct`
+
+Using a binary release:
+- Download the latest release from the [Releases page](https://github.com/dan-sherwin/gormdb2struct/releases).
+- Extract the archive and run the binary.
+
 Requires Go 1.22+.
 
 - Install directly into your GOPATH/bin (or GOBIN):
