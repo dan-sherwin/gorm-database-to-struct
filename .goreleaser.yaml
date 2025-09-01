@@ -70,3 +70,22 @@ nfpms:
 release:
   draft: false
   prerelease: '{{ if .Prerelease }}true{{ else }}false{{ end }}'
+
+brews:
+  - name: gormdb2struct
+    ids: [cli]
+    tap:
+      owner: dan-sherwin
+      name: homebrew-tap
+      branch: main
+    folder: Formula
+    homepage: https://github.com/dan-sherwin/gormdb2struct
+    description: "Generate strongly typed GORM models and query helpers from your database schema."
+    license: MIT
+    install: |
+      bin.install "gormdb2struct"
+    test: |
+      system "#{bin}/gormdb2struct", "-version"
+    commit_author:
+      name: GoReleaser Bot
+      email: noreply@github.com

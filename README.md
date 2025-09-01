@@ -46,16 +46,31 @@ It’s configuration-driven via a TOML file and suitable for CI/CD use.
 
 ## Install
 
-Using DNF/YUM (RPM):
+### Using DNF/YUM (RPM):
+- Ensure config-manager is available (dnf-plugins-core provides it):
+  - `sudo dnf -y install dnf-plugins-core`  (on older yum-based systems: `sudo yum -y install yum-utils`)
 - Add the repo file to your system:
   - `sudo dnf config-manager --add-repo https://dan-sherwin.github.io/dan-sherwin.repo`
 - Install the package:
   - `sudo dnf install gormdb2struct`
 
-Using a binary release:
+### Using a binary release:
 - Download the latest release from the [Releases page](https://github.com/dan-sherwin/gormdb2struct/releases).
 - Extract the archive and run the binary.
 
+### Install via Homebrew (macOS):
+
+- Using the tap:
+    - brew tap dan-sherwin/tap
+    - brew install gormdb2struct
+
+- Or directly:
+    - brew install dan-sherwin/tap/gormdb2struct
+
+Then verify:
+- gormdb2struct -version
+
+### Go Install:
 Requires Go 1.22+.
 
 - Install directly into your GOPATH/bin (or GOBIN):
