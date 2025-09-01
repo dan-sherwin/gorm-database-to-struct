@@ -1,23 +1,43 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/dan-sherwin/gorm-database-to-struct/pgtypes"
-	"github.com/dan-sherwin/gorm-database-to-struct/sqlitetype"
+	"github.com/BurntSushi/toml"
 	"github.com/iancoleman/strcase"
-	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gen"
 	"gorm.io/gen/field"
-	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
 
 type (
+	DatabaseDialect string
+
+	ConversionConfig struct {
+		DatabaseDialect         DatabaseDialect
+		OutPath                 string
+		ImportPackagePaths      []string
+		JsonTagOverridesByTable map[string]map[string]string
+		ExtraFields             map[string][]ExtraField
+		TypeMap                 map[string]string
+		DomainTypeMap           map[string]string
+		NamingStrategy          schema.NamingStrategy
+		CleanUp                 bool
+		GenerateDbInit          bool
+		IncludeAutoMigrate      bool
+		DbHost                  string
+		DbPort                  int
+		DbName                  string
+		DbUser                  string
+		DbPassword              string
+		DbSSLMode               bool
+		SqlitedDbPath           string
+	}
+
 	ExtraField struct {
 		StructPropName    string //Property name to be added into the table struct
 		StructPropType    string //The full path type of the property (e.g. models.MyType)
@@ -28,226 +48,142 @@ type (
 	}
 )
 
-var (
-	typeMaps = map[string]string{
-		"jsonb": "datatypes.JSONMap",
-		"uuid":  "datatypes.UUID",
-	}
-	domainTypeMaps = map[string]string{}
-	namingStrategy = schema.NamingStrategy{IdentifierMaxLength: 64}
-	extraFields    = map[string][]ExtraField{
-		//"ticket_extended": {
-		//	{
-		//		StructPropName:    "Attachments",
-		//		StructPropType:    "models.Attachment",
-		//		FkStructPropName:  "TicketID",
-		//		RefStructPropName: "TicketID",
-		//		HasMany:           true,
-		//		Pointer:           true,
-		//	},
-		//},
-	}
-	outPath            = "internal/db"
-	importPackagePaths = []string{
-		"github.com/dan-sherwin/gorm-database-to-struct/pgtypes",
-	}
-	jsonTagOverridesByTable = map[string]map[string]string{
-		//"ticket_extended": {
-		//	"subject_fts": "-",
-		//},
-	}
+const (
+	POSTGRESQL DatabaseDialect = "postgresql"
+	SQLITE     DatabaseDialect = "sqlite"
 )
 
+var (
+	conversionConfig = ConversionConfig{
+		TypeMap: map[string]string{
+			"jsonb": "datatypes.JSONMap",
+			"uuid":  "datatypes.UUID",
+		},
+		ImportPackagePaths: []string{
+			"github.com/dan-sherwin/gorm-database-to-struct/pgtypes",
+		},
+	}
+	//extraFields    = map[string][]ExtraField{
+	//"ticket_extended": {
+	//	{
+	//		StructPropName:    "Attachments",
+	//		StructPropType:    "models.Attachment",
+	//		FkStructPropName:  "TicketID",
+	//		RefStructPropName: "TicketID",
+	//		HasMany:           true,
+	//		Pointer:           true,
+	//	},
+	//},
+	//}
+	//jsonTagOverridesByTable = map[string]map[string]string{
+	//"ticket_extended": {
+	//	"subject_fts": "-",
+	//},
+	//}
+)
+
+func usage(exitCode int, errMsg string) {
+	prog := filepath.Base(os.Args[0])
+	if strings.TrimSpace(errMsg) != "" {
+		fmt.Fprintf(os.Stderr, "Error: %s\n\n", errMsg)
+	}
+	fmt.Fprintf(os.Stderr, "Usage:\n  %s <config.toml>\n  %s -generateConfigSample\n\n", prog, prog)
+	fmt.Fprintln(os.Stderr, "Description:")
+	fmt.Fprintln(os.Stderr, "  Generates GORM models and optional DB initializer code from an existing database.")
+	fmt.Fprintln(os.Stderr, "  Provide a TOML configuration file describing the database and generation options.")
+	fmt.Fprintln(os.Stderr, "  Use -generateConfigSample to write a sample configuration file named 'gorm-database-to-struct-sample.toml' in the current directory.")
+	os.Exit(exitCode)
+}
+
 func main() {
-	sqliteToGorm()
-	//postgresToGorm()
-}
-
-func sqliteToGorm() {
-	var db *gorm.DB
-	var err error
-	db, err = gorm.Open(sqlite.Open("dev/db-query-model-generator/schema.db"), &gorm.Config{})
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	sqldb, _ := db.DB()
-	err = sqldb.Ping()
-	if err != nil {
-		log.Fatal("Unable to ping database: " + err.Error())
-	}
-	cleanUp()
-	g := gen.NewGenerator(gen.Config{
-		OutPath:           outPath,
-		ModelPkgPath:      outPath + "/models",
-		WithUnitTest:      false,
-		FieldNullable:     true,
-		FieldCoverable:    true,
-		FieldSignable:     true,
-		FieldWithIndexTag: true,
-		FieldWithTypeTag:  true,
-		Mode:              gen.WithoutContext | gen.WithDefaultQuery | gen.WithQueryInterface, // generate mode
-	})
-
-	// JSON tag strategy same as Postgres generator
-	g.WithJSONTagNameStrategy(func(col string) (tag string) { return strcase.ToLowerCamel(col) })
-	// Use SQLite-specific type map (no Postgres materialized views handling)
-	g.WithDataTypeMap(sqlitetype.TypeMap)
-	g.WithImportPkgPath("gorm.io/datatypes")
-	g.UseDB(db)
-
-	// Build models to allow extraFields and jsonTagOverrides like Postgres path
-	modelsMap := map[string]any{}
-	for _, tableName := range sqlitetype.TableNames(db) {
-		model := g.GenerateModel(tableName)
-		if ef, ok := extraFields[tableName]; ok {
-			for _, ef := range ef {
-				a := gen.FieldNew("", "", nil)
-				f := a(nil)
-				genRelationField(&ef, gen.Field(f))
-				model.Fields = append(model.Fields, f)
-			}
+	if len(os.Args) == 2 && os.Args[1] == "-generateConfigSample" {
+		out := "gorm-database-to-struct-sample.toml"
+		if err := os.WriteFile(out, []byte(sampleConfigTOML()), 0644); err != nil {
+			usage(2, fmt.Sprintf("failed to write sample config to %s: %v", out, err))
 		}
-		if jsonTagOverrides, ok := jsonTagOverridesByTable[tableName]; ok {
-			for _, f := range model.Fields {
-				if jsonTag, ok := jsonTagOverrides[f.ColumnName]; ok {
-					f.Tag.Set("json", jsonTag)
-				} else if jsonTag, ok := jsonTagOverrides[f.Name]; ok {
-					f.Tag.Set("json", jsonTag)
-				}
-			}
+		fmt.Fprintf(os.Stdout, "Sample config written to %s\n", out)
+		return
+	}
+	if len(os.Args) != 2 {
+		usage(2, "exactly one argument is required: path to a TOML config file or -generateConfigSample")
+	}
+	cfgPath := os.Args[1]
+	if _, err := os.Stat(cfgPath); err != nil {
+		usage(2, fmt.Sprintf("cannot access config file %s: %v", cfgPath, err))
+	}
+	var cfg ConversionConfig
+	if _, err := toml.DecodeFile(cfgPath, &cfg); err != nil {
+		usage(2, fmt.Sprintf("failed to parse TOML config: %v", err))
+	}
+	// Ensure defaults for maps to avoid nil-map issues if omitted in TOML
+	if cfg.TypeMap == nil {
+		cfg.TypeMap = map[string]string{}
+	}
+	if cfg.DomainTypeMap == nil {
+		cfg.DomainTypeMap = map[string]string{}
+	}
+	if cfg.ExtraFields == nil {
+		cfg.ExtraFields = map[string][]ExtraField{}
+	}
+	if cfg.JsonTagOverridesByTable == nil {
+		cfg.JsonTagOverridesByTable = map[string]map[string]string{}
+	}
+	// Merge defaults from conversionConfig into cfg when not defined in the imported config
+	// Merge TypeMap
+	for k, v := range conversionConfig.TypeMap {
+		if _, exists := cfg.TypeMap[k]; !exists {
+			cfg.TypeMap[k] = v
 		}
-		modelsMap[tableName] = model
 	}
-
-	models := []any{}
-	for _, m := range modelsMap {
-		models = append(models, m)
-	}
-	g.ApplyBasic(models...)
-	g.Execute()
-}
-
-func postgresToGorm() {
-	var db *gorm.DB
-	var err error
-	host := os.Getenv("DB_HOST")
-	if host == "" {
-		host = "localhost"
-	}
-	dbname := os.Getenv("DB_NAME")
-	if dbname == "" {
-		dbname = "chronix"
-	}
-	dsn := "host=" + host + " dbname=" + dbname + " sslmode=disable"
-	db, err = gorm.Open(postgres.Open(dsn))
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	sqldb, _ := db.DB()
-	err = sqldb.Ping()
-	if err != nil {
-		log.Fatal("Unable to ping database: " + err.Error())
-	}
-
-	cleanUp()
-
-	g := gen.NewGenerator(gen.Config{
-		OutPath:           outPath,
-		ModelPkgPath:      outPath + "/models",
-		WithUnitTest:      false,
-		FieldNullable:     true,
-		FieldCoverable:    true,
-		FieldSignable:     true,
-		FieldWithIndexTag: true,
-		FieldWithTypeTag:  true,
-		Mode:              gen.WithoutContext | gen.WithDefaultQuery | gen.WithQueryInterface, // generate mode
-	})
-
-	tables := tableNames(db)
-	materializedViews := materializedViewNames(db)
-
-	g.WithJSONTagNameStrategy(func(col string) (tag string) { return strcase.ToLowerCamel(col) })
-	g.WithImportPkgPath(importPackagePaths...)
-	dtMaps := pgtypes.DataTypeMap()
-	for k, v := range typeMaps {
-		dtMaps[k] = dt(v)
-	}
-	dtMaps["text"] = func(columnType gorm.ColumnType) string {
-		if colType, ok := columnType.ColumnType(); ok {
-			if domain, ok := domainTypeMaps[colType]; ok {
-				return domain
-			}
+	// Merge DomainTypeMap
+	for k, v := range conversionConfig.DomainTypeMap {
+		if _, exists := cfg.DomainTypeMap[k]; !exists {
+			cfg.DomainTypeMap[k] = v
 		}
-		return "string"
 	}
-	g.WithDataTypeMap(dtMaps)
-	g.UseDB(db)
-	modelsMap := map[string]any{}
-	for _, tableName := range tables {
-		model := g.GenerateModel(tableName)
-		if ef, ok := extraFields[tableName]; ok {
-			for _, ef := range ef {
-				a := gen.FieldNew("", "", nil)
-				f := a(nil)
-				genRelationField(&ef, gen.Field(f))
-				model.Fields = append(model.Fields, f)
-			}
+	// Merge ImportPackagePaths (append missing entries while preserving order)
+	existing := map[string]struct{}{}
+	for _, p := range cfg.ImportPackagePaths {
+		existing[p] = struct{}{}
+	}
+	for _, p := range conversionConfig.ImportPackagePaths {
+		if _, ok := existing[p]; !ok {
+			cfg.ImportPackagePaths = append(cfg.ImportPackagePaths, p)
 		}
-		if jsonTagOverrides, ok := jsonTagOverridesByTable[tableName]; ok {
-			for _, f := range model.Fields {
-				if jsonTag, ok := jsonTagOverrides[f.ColumnName]; ok {
-					f.Tag.Set("json", jsonTag)
-				} else if jsonTag, ok := jsonTagOverrides[f.Name]; ok {
-					f.Tag.Set("json", jsonTag)
-				}
-			}
-		}
-		modelsMap[tableName] = model
 	}
 
-	for _, viewName := range materializedViews {
-		tmpViewName := viewName + "_temp"
-		_, _ = sqldb.Query("drop view if exists " + tmpViewName)
-		_, err = sqldb.Query("create view " + tmpViewName + " as select * from " + viewName)
-		if err != nil {
-			log.Fatal(err.Error())
+	// Validate imported config
+	if strings.TrimSpace(cfg.OutPath) == "" {
+		usage(2, "configuration error: OutPath is required")
+	}
+	if cfg.DatabaseDialect != POSTGRESQL && cfg.DatabaseDialect != SQLITE {
+		usage(2, fmt.Sprintf("configuration error: DatabaseDialect must be '%s' or '%s'", POSTGRESQL, SQLITE))
+	}
+	if cfg.DatabaseDialect == POSTGRESQL {
+		if cfg.DbPort == 0 {
+			cfg.DbPort = 5432
 		}
-		defer sqldb.Query("drop view " + tmpViewName)
-		modelName := namingStrategy.SchemaName(viewName)
-		model := g.GenerateModelAs(tmpViewName, modelName)
-
-		if ef, ok := extraFields[viewName]; ok {
-			for _, ef := range ef {
-				a := gen.FieldNew("", "", nil)
-				f := a(nil)
-				genRelationField(&ef, gen.Field(f))
-				model.Fields = append(model.Fields, f)
-			}
+		if strings.TrimSpace(cfg.DbHost) == "" {
+			usage(2, "configuration error: DbHost is required for postgresql dialect")
 		}
-		model.FileName = viewName
-		model.TableName = viewName
-		if jsonTagOverrides, ok := jsonTagOverridesByTable[viewName]; ok {
-			for _, f := range model.Fields {
-				if jsonTag, ok := jsonTagOverrides[f.ColumnName]; ok {
-					f.Tag.Set("json", jsonTag)
-				} else if jsonTag, ok := jsonTagOverrides[f.Name]; ok {
-					f.Tag.Set("json", jsonTag)
-				}
-			}
+		if strings.TrimSpace(cfg.DbName) == "" {
+			usage(2, "configuration error: DbName is required for postgresql dialect")
 		}
-		modelsMap[viewName] = model
+	}
+	if cfg.DatabaseDialect == SQLITE {
+		if strings.TrimSpace(cfg.SqlitedDbPath) == "" {
+			usage(2, "configuration error: SqlitedDbPath is required for sqlite dialect")
+		}
 	}
 
-	models := []any{}
-	for _, model := range modelsMap {
-		models = append(models, model)
+	switch cfg.DatabaseDialect {
+	case POSTGRESQL:
+		postgresToGorm(cfg)
+	case SQLITE:
+		sqliteToGorm(cfg)
+	default:
+		usage(2, fmt.Sprintf("unknown database dialect: %s (expected '%s' or '%s')", cfg.DatabaseDialect, POSTGRESQL, SQLITE))
 	}
-	g.ApplyBasic(models...)
-	g.Execute()
-}
-
-func dt(goType string) func(columnType gorm.ColumnType) string {
-	return func(columnType gorm.ColumnType) string { return goType }
 }
 
 func genRelationField(ef *ExtraField, fld gen.Field) {
@@ -280,7 +216,69 @@ func genRelationField(ef *ExtraField, fld gen.Field) {
 	)
 }
 
-func cleanUp() {
+func sampleConfigTOML() string {
+	return `# gorm-database-to-struct configuration
+# OutPath: directory where generated files are written (models, query, db init)
+OutPath = "./generated"
+
+# DatabaseDialect: "postgresql" or "sqlite"
+DatabaseDialect = "postgresql"
+
+# GenerateDbInit: also generate a db initialization file (db.go or db_sqlite.go)
+GenerateDbInit = true
+
+# IncludeAutoMigrate: if true, generated DbInit will run AutoMigrate for all models
+IncludeAutoMigrate = false
+
+# CleanUp: remove previous *gen.go files in OutPath before generating
+CleanUp = true
+
+# ImportPackagePaths: extra imports to include in generated code (optional)
+ImportPackagePaths = [
+  "github.com/dan-sherwin/gorm-database-to-struct/pgtypes",
+]
+
+# TypeMap: database column type overrides (optional)
+[TypeMap]
+# "jsonb" = "datatypes.JSONMap"
+# "uuid"  = "datatypes.UUID"
+
+# DomainTypeMap: map database domain names to Go types (optional)
+[DomainTypeMap]
+# "my_text_domain" = "string"
+
+# ExtraFields: add relation fields to specific models (optional)
+[ExtraFields]
+# [ExtraFields."ticket_extended"]
+#   [[ExtraFields."ticket_extended"]]
+#   StructPropName = "Attachments"
+#   StructPropType = "models.Attachment"  # fully-qualified type
+#   FkStructPropName = "TicketID"
+#   RefStructPropName = "TicketID"
+#   HasMany = true
+#   Pointer = true
+
+# JsonTagOverridesByTable: override json tags for fields (optional)
+[JsonTagOverridesByTable]
+# [JsonTagOverridesByTable."ticket_extended"]
+#   subject_fts = "-"  # omit from JSON
+
+# --- PostgreSQL specific options ---
+# Required when DatabaseDialect = "postgresql"
+DbHost = "localhost"     # required
+DbPort = 5432             # optional, defaults to 5432
+DbName = "my_database"    # required
+DbUser = "my_user"        # optional
+DbPassword = "secret"     # optional
+DbSSLMode = false         # optional: true to enable sslmode=require in DSN
+
+# --- SQLite specific option ---
+# Required when DatabaseDialect = "sqlite"
+SqlitedDbPath = "./schema.db"
+`
+}
+
+func cleanUp(outPath string) {
 	//Cleanup
 	genFiles, err := filepath.Glob(outPath + "/*gen.go")
 	if err != nil {
@@ -297,22 +295,4 @@ func cleanUp() {
 		os.Remove(genFile)
 	}
 
-}
-
-func tableNames(db *gorm.DB) (tableNames []string) {
-	tableNames = []string{}
-	err := db.Raw("select table_name from information_schema.tables where table_schema = 'public'").Scan(&tableNames).Error
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	return
-}
-
-func materializedViewNames(db *gorm.DB) (tableNames []string) {
-	tableNames = []string{}
-	err := db.Raw("select matviewname from pg_matviews where schemaname='public'").Scan(&tableNames).Error
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	return
 }
