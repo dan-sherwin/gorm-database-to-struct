@@ -1,3 +1,4 @@
+version: 2
 # GoReleaser configuration for gormdb2struct
 # See: https://goreleaser.com/
 
@@ -32,7 +33,7 @@ archives:
     # name template will include OS/Arch automatically
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [ 'zip' ]
     files:
       - LICENSE
       - README.md
@@ -59,17 +60,12 @@ nfpms:
     vendor: Dan Sherwin
     formats:
       - rpm
+    ids:
+      - cli
     bindir: /usr/bin
-    contents:
-      - src: ./dist/{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}/gormdb2struct
-        dst: /usr/bin/gormdb2struct
-        type: file
-        mode: 0755
     rpm:
       summary: GORM database-to-struct generator
       group: Development/Tools
-    dependencies:
-      - glibc
 
 release:
   draft: false
