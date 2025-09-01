@@ -10,14 +10,30 @@ before:
   hooks:
     - go mod tidy
 
-# Build the CLI for multiple OS/arch with version info via ldflags
+# Build the CLI for linux and windows
 builds:
-  - id: cli
+  - id: cli-multiplatform
     main: .
     binary: gormdb2struct
     env:
       - CGO_ENABLED=0
-    goos: [linux, darwin, windows]
+    goos: [linux, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ .Date }}
+    flags:
+      - -trimpath
+
+  # Separate build specifically for macOS to be used by the Homebrew Cask
+  - id: cli-macos
+    main: .
+    binary: gormdb2struct
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin]
     goarch: [amd64, arm64]
     ldflags:
       - -s -w
@@ -29,14 +45,22 @@ builds:
 
 # Package archives and include common files
 archives:
-  - id: archives
-    # name template will include OS/Arch automatically
-    format_overrides:
-      - goos: windows
-        formats: [ 'zip' ]
+  - id: archives-multiplatform
     files:
       - LICENSE
       - README.md
+    format_overrides:
+      - goos: windows
+        formats: [ 'zip' ]
+    ids:
+      - cli-multiplatform
+
+  - id: archives-macos
+    files:
+      - LICENSE
+      - README.md
+    ids:
+      - cli-macos
 
 checksum:
   name_template: "checksums.txt"
@@ -61,7 +85,7 @@ nfpms:
     formats:
       - rpm
     ids:
-      - cli
+      - cli-multiplatform
     bindir: /usr/bin
     rpm:
       summary: GORM database-to-struct generator
@@ -71,21 +95,17 @@ release:
   draft: false
   prerelease: '{{ if .Prerelease }}true{{ else }}false{{ end }}'
 
-brews:
+homebrew_casks:
   - name: gormdb2struct
-    ids: [cli]
-    tap:
+    ids: [archives-macos] # Link to the new macOS-specific archive
+    repository:
       owner: dan-sherwin
       name: homebrew-tap
       branch: main
-    folder: Formula
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: https://github.com/dan-sherwin/gormdb2struct
     description: "Generate strongly typed GORM models and query helpers from your database schema."
     license: MIT
-    install: |
-      bin.install "gormdb2struct"
-    test: |
-      system "#{bin}/gormdb2struct", "-version"
     commit_author:
       name: GoReleaser Bot
       email: noreply@github.com
