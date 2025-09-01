@@ -293,7 +293,7 @@ Create /etc/yum.repos.d/gormdb2struct.repo with:
 ```
 [gormdb2struct]
 name=gormdb2struct
-baseurl=https://dan-sherwin.github.io/gormdb2struct/rpm/$basearch/
+baseurl=https://dan-sherwin.github.io/yum/rpm/$basearch/
 enabled=1
 gpgcheck=0
 ```
@@ -319,5 +319,5 @@ name=gormdb2struct
 baseurl=https://dan-sherwin.github.io/gormdb2struct/rpm/$basearch/
 enabled=1
 gpgcheck=1
-gpgkey=https://dan-sherwin.github.io/gormdb2struct/public.key
+gpgkey=https://dan-sherwin.github.io/public.key
 ```

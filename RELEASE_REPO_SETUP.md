@@ -2,17 +2,17 @@
 
 This repository publishes RPM packages to a Yum/DNF repo hosted via GitHub Pages under:
 
-  https://dan-sherwin.github.io/gormdb2struct/rpm/$basearch/
+  https://dan-sherwin.github.io/yum/rpm/$basearch/
 
 Where `$basearch` is either `x86_64` or `aarch64`.
 
 ## How it works
 
-- On every GitHub Release (published), the workflow `.github/workflows/publish_yum_repo.yml`:
+- On every GitHub Release (published), the workflow `.github/workflows/publish_shared_yum_repo.yml`:
   1. Downloads the release RPM artifacts for linux amd64/arm64.
-  2. Organizes them into `public/rpm/x86_64` and `public/rpm/aarch64`.
-  3. Runs `createrepo_c` to produce `repodata/` for each arch directory.
-  4. Publishes the `public/` directory to the `gh-pages` branch.
+  2. Adds them into shared/yum/rpm/x86_64 and shared/yum/rpm/aarch64, creates/updates repodata with createrepo_c.
+  3. Publishes the shared/yum directory to the user Pages repo (dan-sherwin/dan-sherwin.github.io) gh-pages branch.
+  4. GitHub Pages must be enabled for dan-sherwin.github.io with Source: gh-pages.
 
 - GitHub Pages must be enabled for this repository (Settings → Pages → Build from `gh-pages`).
 
@@ -45,5 +45,5 @@ If you want to sign RPMs and enable `gpgcheck=1`:
 
 ```
 gpgcheck=1
-gpgkey=https://dan-sherwin.github.io/gormdb2struct/public.key
+gpgkey=https://dan-sherwin.github.io/public.key
 ```

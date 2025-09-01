@@ -1,0 +1,51 @@
+name: Publish Shared YUM Repo
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  publish-shared-yum:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download release RPM assets
+        uses: robinraju/release-downloader@v1.11
+        with:
+          repository: ${{ github.repository }}
+          tag: ${{ github.event.release.tag_name }}
+          fileName: "gormdb2struct_*_linux_*.rpm"
+          out-file-path: dist_rpms
+
+      - name: Install createrepo_c
+        run: sudo apt-get update && sudo apt-get install -y createrepo-c
+
+      - name: Prepare shared repo directories
+        run: |
+          mkdir -p shared/yum/rpm/x86_64 shared/yum/rpm/aarch64
+          shopt -s nullglob
+          for f in dist_rpms/*linux_amd64.rpm; do cp -v "$f" shared/yum/rpm/x86_64/; done
+          for f in dist_rpms/*linux_arm64.rpm; do cp -v "$f" shared/yum/rpm/aarch64/; done
+          createrepo_c shared/yum/rpm/x86_64
+          createrepo_c shared/yum/rpm/aarch64
+
+      - name: Publish to user Pages repo (dan-sherwin.github.io)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          external_repository: dan-sherwin/dan-sherwin.github.io
+          publish_dir: shared
+          publish_branch: gh-pages
+          personal_token: ${{ secrets.GH_PAGES_TOKEN }}
+          keep_files: true
+
+      - name: Output repo URL
+        run: |
+          echo "Shared Yum repo published to: https://dan-sherwin.github.io/yum/rpm/$basearch/"
