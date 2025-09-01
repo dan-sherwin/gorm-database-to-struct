@@ -1,0 +1,1 @@
+# gorm-database-to-struct
