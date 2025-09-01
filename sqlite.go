@@ -9,7 +9,7 @@ import (
 
 	"github.com/dan-sherwin/gormdb2struct/sqlitetype"
 	"github.com/iancoleman/strcase"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gen"
 	"gorm.io/gorm"
 )
@@ -130,7 +130,7 @@ import (
 	"log/slog"
 	"os"
 	slogGorm "github.com/orandin/slog-gorm"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"{{.PackageName}}/models"
 )

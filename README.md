@@ -284,16 +284,40 @@ This project uses GoReleaser to publish binaries for Linux, macOS (darwin), and 
 
 ### Install via dnf/yum (RPM)
 
-Releases also include RPM packages built with nfpm.
+Releases also include RPM packages built with nfpm, and a YUM/DNF repository is published to GitHub Pages.
 
-- Download the appropriate .rpm from the Release matching your OS/arch, then install:
+To enable `dnf install gormdb2struct` on your machine, add this repo file:
+
+Create /etc/yum.repos.d/gormdb2struct.repo with:
 
 ```
-sudo dnf install ./gormdb2struct_<version>_linux_amd64.rpm
-# or on RHEL/CentOS with yum
-sudo yum install ./gormdb2struct_<version>_linux_amd64.rpm
+[gormdb2struct]
+name=gormdb2struct
+baseurl=https://dan-sherwin.github.io/gormdb2struct/rpm/$basearch/
+enabled=1
+gpgcheck=0
 ```
 
-This installs the binary at /usr/bin/gormdb2struct.
+Then run:
 
-If you want to set up a repository for automatic updates, host the RPMs and metadata in your own repo server and configure /etc/yum.repos.d accordingly.
+```
+sudo dnf clean all
+sudo dnf makecache
+sudo dnf install gormdb2struct
+```
+
+Notes:
+- `$basearch` resolves to x86_64 or aarch64 automatically.
+- If you prefer to install directly from a downloaded RPM, you can still do:
+  - `sudo dnf install ./gormdb2struct_<version>_linux_amd64.rpm`
+
+Optional (recommended) GPG signing:
+- If you later enable RPM signing and publish your public key at `https://dan-sherwin.github.io/gormdb2struct/public.key`, change the repo to:
+```
+[gormdb2struct]
+name=gormdb2struct
+baseurl=https://dan-sherwin.github.io/gormdb2struct/rpm/$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=https://dan-sherwin.github.io/gormdb2struct/public.key
+```

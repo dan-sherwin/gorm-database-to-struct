@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/glebarez/go-sqlite"
 )
 
 // TestEndToEndSQLite generates models from a temp SQLite DB and then builds and runs
@@ -27,7 +27,7 @@ func TestEndToEndSQLite(t *testing.T) {
 
 	// Create sqlite schema with various data types and a relation to test ExtraFields.
 	dsn := fmt.Sprintf("file:%s?cache=shared&_fk=1", dbPath)
-	db, err := sql.Open("sqlite3", dsn)
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
@@ -102,7 +102,7 @@ SqlitedDbPath = %q
 	// Run generator: go run . <config>
 	cmd := exec.CommandContext(context.Background(), "go", "run", ".", cfgPath)
 	cmd.Dir = projectRoot(t)
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=1")
+	cmd.Env = os.Environ()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("generator failed: %v\nOutput:\n%s", err, string(out))
@@ -120,7 +120,7 @@ SqlitedDbPath = %q
 	}
 	pkgBase := filepath.Base(outPath)
 	patched := strings.ReplaceAll(string(b), fmt.Sprintf("\"%s/models\"", pkgBase), fmt.Sprintf("\"%s/%s/models\"", modulePath(t), pkgBase))
-	patched = strings.ReplaceAll(patched, "slogGorm \"github.com/orandin/slog-gorm\"\n\t\"gorm.io/driver/sqlite\"", "\"gorm.io/driver/sqlite\"")
+ patched = strings.ReplaceAll(patched, "slogGorm \"github.com/orandin/slog-gorm\"\n\t\"github.com/glebarez/sqlite\"", "\"github.com/glebarez/sqlite\"")
 	patched = strings.ReplaceAll(patched, "&gorm.Config{Logger: slogGorm.New(slogGorm.WithRecordNotFoundError())}", "&gorm.Config{}")
 	if err := os.WriteFile(dbInitPath, []byte(patched), 0o644); err != nil {
 		t.Fatal(err)
