@@ -19,8 +19,8 @@ type (
 
 	ConversionConfig struct {
 		DatabaseDialect         DatabaseDialect
-		AppModuleName           string
 		OutPath                 string
+		OutPackagePath          string
 		ImportPackagePaths      []string
 		JsonTagOverridesByTable map[string]map[string]string
 		ExtraFields             map[string][]ExtraField
@@ -239,8 +239,8 @@ DatabaseDialect = "postgresql"
 # GenerateDbInit: also generate a db initialization file (db.go or db_sqlite.go)
 GenerateDbInit = true
 
-# AppModuleName: name of the application module to be used in the DbInit file (optional)
-AppModuleName = ""
+# OutPackagePath: package path to the out path for use in the DbInit file (e.g. github.com/username/my_app/generated) (optional)
+OutPackagePath = ""
 
 # IncludeAutoMigrate: if true, generated DbInit will run AutoMigrate for all models
 IncludeAutoMigrate = false

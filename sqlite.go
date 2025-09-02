@@ -87,11 +87,11 @@ func sqliteToGorm(cfg ConversionConfig) {
 
 func generateSqliteDbInit(cfg ConversionConfig, g *gen.Generator) {
 	outPath := g.OutPath
-	packageName := filepath.Base(outPath)
-	fullPackageName := packageName
-	if cfg.AppModuleName != "" {
-		fullPackageName = cfg.AppModuleName + "/" + packageName
+	fullPackageName := filepath.Base(outPath)
+	if cfg.OutPackagePath != "" {
+		fullPackageName = cfg.OutPackagePath
 	}
+	packageName := filepath.Base(fullPackageName)
 	modelStructNames := []string{}
 	for modelName := range g.Data {
 		modelStructNames = append(modelStructNames, modelName)
