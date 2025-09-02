@@ -121,6 +121,7 @@ Minimal required keys depend on the selected `DatabaseDialect`.
 
 - Shared
   - OutPath: directory where generated files are written
+  - OutPackagePath: package path to the out path for use in the DbInit file
   - DatabaseDialect: "postgresql" or "sqlite"
   - GenerateDbInit: set true to also generate db initializer
   - IncludeAutoMigrate: if true, DbInit runs GORM AutoMigrate for all models
@@ -144,6 +145,9 @@ Sample config:
 # gormdb2struct configuration
 # OutPath: directory where generated files are written (models, query, db init)
 OutPath = "./generated"
+
+# OutPackagePath: package path to the out path for use in the DbInit file (e.g. github.com/username/my_app/generated) (optional)
+OutPackagePath = ""
 
 # DatabaseDialect: "postgresql" or "sqlite"
 DatabaseDialect = "postgresql"

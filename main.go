@@ -233,14 +233,14 @@ func sampleConfigTOML() string {
 # OutPath: directory where generated files are written (models, query, db init)
 OutPath = "./generated"
 
+# OutPackagePath: package path to the out path for use in the DbInit file (e.g. github.com/username/my_app/generated) (optional)
+OutPackagePath = ""
+
 # DatabaseDialect: "postgresql" or "sqlite"
 DatabaseDialect = "postgresql"
 
 # GenerateDbInit: also generate a db initialization file (db.go or db_sqlite.go)
 GenerateDbInit = true
-
-# OutPackagePath: package path to the out path for use in the DbInit file (e.g. github.com/username/my_app/generated) (optional)
-OutPackagePath = ""
 
 # IncludeAutoMigrate: if true, generated DbInit will run AutoMigrate for all models
 IncludeAutoMigrate = false
