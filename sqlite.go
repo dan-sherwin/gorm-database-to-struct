@@ -8,8 +8,8 @@ import (
 	"text/template"
 
 	"github.com/dan-sherwin/gormdb2struct/sqlitetype"
-	"github.com/iancoleman/strcase"
 	"github.com/glebarez/sqlite"
+	"github.com/iancoleman/strcase"
 	"gorm.io/gen"
 	"gorm.io/gorm"
 )
@@ -132,7 +132,6 @@ import (
 	slogGorm "github.com/orandin/slog-gorm"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
-	"{{.PackageName}}/models"
 )
 
 var (

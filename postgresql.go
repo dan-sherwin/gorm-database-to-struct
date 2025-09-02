@@ -206,8 +206,6 @@ import (
 	slogGorm "github.com/orandin/slog-gorm"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"{{.PackageName}}/models"
-	"{{.PackageName}}/utilities"
 )
 
 var (
@@ -225,7 +223,7 @@ func DbInit(optionalDSN ...string) {
 	if len(optionalDSN) > 0 && optionalDSN[0] != "" {
 		dsn = optionalDSN[0]
 	} else {
-		dsn = utilities.DbDSN(utilities.DbDSNConfig{
+		dsn = DbDSN(DbDSNConfig{
 		Server:   DbHost,
 		Port:     DbPort,
 		Name:     DbName,
@@ -265,4 +263,41 @@ func DbInit(optionalDSN ...string) {
 	DB = gormDB
 	slog.Debug("GORM query objects initialized")
 }
+
+type (
+	DbDSNConfig struct {
+		Server   string
+		Port     int
+		Name     string
+		User     string
+		Password string
+		SSLMode  bool
+		TimeZone string
+	}
+)
+
+// DbDSN generates a database connection string (DSN) based on the provided configuration structure, including server, port, database name, user, password, SSL mode, and timezone. The SSL mode defaults to "enable" or "disable" based on the cfg.SSLMode flag.
+func DbDSN(cfg DbDSNConfig) string {
+	var sm string
+	if cfg.SSLMode {
+		sm = "enable"
+	} else {
+		sm = "disable"
+	}
+	connstr := fmt.Sprintf("host=%s dbname=%s sslmode=%s", cfg.Server, cfg.Name, sm)
+	if cfg.Port != 0 {
+		connstr = fmt.Sprintf("%s port=%d", connstr, cfg.Port)
+	}
+	if len(cfg.User) > 0 {
+		connstr = fmt.Sprintf("%s user=%s", connstr, cfg.User)
+	}
+	if len(cfg.Password) > 0 {
+		connstr = fmt.Sprintf("%s password=%s", connstr, cfg.Password)
+	}
+	if len(cfg.TimeZone) > 0 {
+		connstr = fmt.Sprintf("%s TimeZone=%s", connstr, cfg.TimeZone)
+	}
+	return connstr
+}
+
 `
