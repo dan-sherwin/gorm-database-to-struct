@@ -150,6 +150,10 @@ func postgresToGorm(cfg ConversionConfig) {
 func generatePostgresDbInit(cfg ConversionConfig, g *gen.Generator) {
 	outPath := g.OutPath
 	packageName := filepath.Base(outPath)
+	fullPackageName := packageName
+	if cfg.AppModuleName != "" {
+		fullPackageName = cfg.AppModuleName + "/" + packageName
+	}
 	modelStructNames := []string{}
 	for modelName := range g.Data {
 		modelStructNames = append(modelStructNames, modelName)
@@ -158,6 +162,7 @@ func generatePostgresDbInit(cfg ConversionConfig, g *gen.Generator) {
 	// Prepare data for the template
 	data := struct {
 		PackageName        string
+		FullPackageName    string
 		DbHost             string
 		DbPort             int
 		DbName             string
@@ -168,6 +173,7 @@ func generatePostgresDbInit(cfg ConversionConfig, g *gen.Generator) {
 		ModelStructNames   []string
 	}{
 		PackageName:        packageName,
+		FullPackageName:    fullPackageName,
 		DbHost:             cfg.DbHost,
 		DbPort:             cfg.DbPort,
 		DbName:             cfg.DbName,
@@ -206,6 +212,7 @@ import (
 	slogGorm "github.com/orandin/slog-gorm"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"{{.FullPackageName}}/models"
 )
 
 var (

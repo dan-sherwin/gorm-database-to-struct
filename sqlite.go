@@ -88,6 +88,10 @@ func sqliteToGorm(cfg ConversionConfig) {
 func generateSqliteDbInit(cfg ConversionConfig, g *gen.Generator) {
 	outPath := g.OutPath
 	packageName := filepath.Base(outPath)
+	fullPackageName := packageName
+	if cfg.AppModuleName != "" {
+		fullPackageName = cfg.AppModuleName + "/" + packageName
+	}
 	modelStructNames := []string{}
 	for modelName := range g.Data {
 		modelStructNames = append(modelStructNames, modelName)
@@ -95,11 +99,13 @@ func generateSqliteDbInit(cfg ConversionConfig, g *gen.Generator) {
 
 	data := struct {
 		PackageName        string
+		FullPackageName    string
 		DbPath             string
 		IncludeAutoMigrate bool
 		ModelStructNames   []string
 	}{
 		PackageName:        packageName,
+		FullPackageName:    fullPackageName,
 		DbPath:             "dev/db-query-model-generator/schema.db",
 		IncludeAutoMigrate: cfg.IncludeAutoMigrate,
 		ModelStructNames:   modelStructNames,
@@ -132,6 +138,7 @@ import (
 	slogGorm "github.com/orandin/slog-gorm"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
+	"{{.FullPackageName}}/models"
 )
 
 var (

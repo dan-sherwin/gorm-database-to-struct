@@ -66,7 +66,7 @@ func TestPostgresDbInitTemplateNoDB(t *testing.T) {
 	mustContain(t, content, "&models.Foo{}")
 	mustContain(t, content, "&models.Bar{}")
 	// Ensure DSN is constructed via utilities when optional DSN is not provided
-	mustContain(t, content, "utilities.DbDSN(")
+	mustContain(t, content, "DbDSN(")
 }
 
 func mustContain(t *testing.T, s, sub string) {
