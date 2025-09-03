@@ -120,8 +120,8 @@ SqlitedDbPath = %q
 	}
 	pkgBase := filepath.Base(outPath)
 	patched := strings.ReplaceAll(string(b), fmt.Sprintf("\"%s/models\"", pkgBase), fmt.Sprintf("\"%s/%s/models\"", modulePath(t), pkgBase))
- patched = strings.ReplaceAll(patched, "slogGorm \"github.com/orandin/slog-gorm\"\n\t\"github.com/glebarez/sqlite\"", "\"github.com/glebarez/sqlite\"")
-	patched = strings.ReplaceAll(patched, "&gorm.Config{Logger: slogGorm.New(slogGorm.WithRecordNotFoundError())}", "&gorm.Config{}")
+	patched = strings.ReplaceAll(patched, "slogGorm \"github.com/orandin/slog-gorm\"\n\t\"github.com/glebarez/sqlite\"", "\"github.com/glebarez/sqlite\"")
+	patched = strings.ReplaceAll(patched, "&gorm.Config{Logger: slogGorm.New()}", "&gorm.Config{}")
 	if err := os.WriteFile(dbInitPath, []byte(patched), 0o644); err != nil {
 		t.Fatal(err)
 	}
