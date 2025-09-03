@@ -155,7 +155,7 @@ func DbInit(optionalFilePath ...string) {
 		filePath = DbPath
 	}
 	slog.Info("Connecting to sqlite database", slog.String("path", filePath))
-	gormDB, err := gorm.Open(sqlite.Open(filePath), &gorm.Config{Logger: slogGorm.New(slogGorm.WithRecordNotFoundError())})
+	gormDB, err := gorm.Open(sqlite.Open(filePath), &gorm.Config{Logger: slogGorm.New()})
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)

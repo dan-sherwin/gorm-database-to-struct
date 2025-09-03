@@ -240,7 +240,7 @@ func DbInit(optionalDSN ...string) {
 	})
 	}
 	slog.Info("Connecting to database", slog.String("host", DbHost), slog.Int("port", DbPort), slog.String("db", DbName), slog.String("user", DbUser))
-	gormDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: slogGorm.New(slogGorm.WithRecordNotFoundError())})
+	gormDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: slogGorm.New()})
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
