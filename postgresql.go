@@ -5,8 +5,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"text/template"
 
+	"github.com/dan-sherwin/go-utilities"
 	"github.com/dan-sherwin/gormdb2struct/pgtypes"
 	"github.com/iancoleman/strcase"
 	"gorm.io/driver/postgres"
@@ -17,15 +19,42 @@ import (
 func postgresToGorm(cfg ConversionConfig) {
 	var db *gorm.DB
 	var err error
-	host := os.Getenv("DB_HOST")
-	if host == "" {
-		host = "localhost"
+	if cfg.DbHost == "" {
+		cfg.DbHost = os.Getenv("DB_HOST")
+		if cfg.DbHost == "" {
+			cfg.DbHost = "localhost"
+		}
 	}
-	dbname := os.Getenv("DB_NAME")
-	if dbname == "" {
-		dbname = "chronix"
+	if cfg.DbPort == 0 {
+		cfg.DbPort = 5432
+		port := os.Getenv("DB_PORT")
+		if port != "" {
+			cfg.DbPort, err = strconv.Atoi(port)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+		}
 	}
-	dsn := "host=" + host + " dbname=" + dbname + " sslmode=disable"
+	if cfg.DbName == "" {
+		cfg.DbName = os.Getenv("DB_NAME")
+		if cfg.DbName == "" {
+			log.Fatal("no database name provided. Please set DB_NAME environment variable or pass it as a command line argument")
+		}
+	}
+	if cfg.DbUser == "" {
+		cfg.DbUser = os.Getenv("DB_USER")
+	}
+	if cfg.DbPassword == "" {
+		cfg.DbPassword = os.Getenv("DB_PASSWORD")
+	}
+	dsn := utilities.DbDSN(utilities.DbDSNConfig{
+		Server:   cfg.DbHost,
+		Port:     cfg.DbPort,
+		Name:     cfg.DbName,
+		User:     cfg.DbUser,
+		Password: cfg.DbPassword,
+		SSLMode:  cfg.DbSSLMode,
+	})
 	db, err = gorm.Open(postgres.Open(dsn))
 	if err != nil {
 		log.Fatal(err.Error())

@@ -17,7 +17,7 @@ import (
 func sqliteToGorm(cfg ConversionConfig) {
 	var db *gorm.DB
 	var err error
-	db, err = gorm.Open(sqlite.Open(cfg.SqlitedDbPath), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open(cfg.Sqlitedbpath), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err.Error())
 	}

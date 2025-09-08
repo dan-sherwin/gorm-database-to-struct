@@ -130,7 +130,7 @@ Minimal required keys depend on the selected `DatabaseDialect`.
   - DbHost (required), DbName (required), DbPort (optional, defaults 5432)
   - DbUser (optional), DbPassword (optional), DbSSLMode (optional)
 - SQLite
-  - SqlitedDbPath (required): path to your sqlite database file
+  - Sqlitedbpath (required): path to your sqlite database file
 
 Advanced options:
 - ImportPackagePaths: extra import paths for generated code
@@ -202,14 +202,14 @@ DbSSLMode = false           # optional: true to enable sslmode=require in DSN
 
 # --- SQLite specific option ---
 # Required when DatabaseDialect = "sqlite"
-SqlitedDbPath = "./schema.db"
+Sqlitedbpath = "./schema.db"
 ```
 
 Validation rules enforced by the tool:
 - OutPath is required
 - DatabaseDialect must be "postgresql" or "sqlite"
 - For postgresql: DbHost and DbName required; DbPort defaults to 5432 if omitted
-- For sqlite: SqlitedDbPath required
+- For sqlite: Sqlitedbpath required
 
 ---
 

@@ -39,7 +39,7 @@ func TestEndToEndSQLite(t *testing.T) {
 			id INTEGER PRIMARY KEY,
 			bool_col BOOLEAN,
 			tiny1 TINYINT(1),
-			int_col INT,
+			int_col INTEGER NOT NULL DEFAULT 0,
 			big_col BIGINT,
 			real_col REAL,
 			double_col DOUBLE,
@@ -83,7 +83,7 @@ DatabaseDialect = "sqlite"
 GenerateDbInit = true
 IncludeAutoMigrate = true
 CleanUp = true
-SqlitedDbPath = %q
+Sqlitedbpath = %q
 
 [ExtraFields]
   [[ExtraFields."all_types"]]

@@ -36,7 +36,7 @@ type (
 		DbUser                  string
 		DbPassword              string
 		DbSSLMode               bool
-		SqlitedDbPath           string
+		Sqlitedbpath            string
 	}
 
 	ExtraField struct {
@@ -183,8 +183,8 @@ func main() {
 		}
 	}
 	if cfg.DatabaseDialect == SQLITE {
-		if strings.TrimSpace(cfg.SqlitedDbPath) == "" {
-			usage(2, "configuration error: SqlitedDbPath is required for sqlite dialect")
+		if strings.TrimSpace(cfg.Sqlitedbpath) == "" {
+			usage(2, "configuration error: Sqlitedbpath is required for sqlite dialect")
 		}
 	}
 
@@ -289,7 +289,7 @@ DbSSLMode = false         # optional: true to enable sslmode=require in DSN
 
 # --- SQLite specific option ---
 # Required when DatabaseDialect = "sqlite"
-SqlitedDbPath = "./schema.db"
+Sqlitedbpath = "./schema.db"
 `
 }
 
