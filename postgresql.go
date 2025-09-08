@@ -241,7 +241,9 @@ import (
 	slogGorm "github.com/orandin/slog-gorm"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	{{if .IncludeAutoMigrate}}
 	"{{.FullPackageName}}/models"
+	{{end}}
 )
 
 var (
@@ -265,7 +267,7 @@ func DbInit(optionalDSN ...string) {
 		Name:     DbName,
 		User:     DbUser,
 		Password: DbPassword,
-		DbSSLMode:  DbSSLMode,
+		SSLMode:  DbSSLMode,
 	})
 	}
 	slog.Info("Connecting to database", slog.String("host", DbHost), slog.Int("port", DbPort), slog.String("db", DbName), slog.String("user", DbUser))
