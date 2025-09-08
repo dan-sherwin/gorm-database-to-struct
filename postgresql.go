@@ -236,6 +236,7 @@ var pgDbInitTemplate = `
 package {{.PackageName}}
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	slogGorm "github.com/orandin/slog-gorm"
