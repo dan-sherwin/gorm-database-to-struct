@@ -48,8 +48,8 @@ var TypeMap = map[string]func(gorm.ColumnType) string{
 	"CHAR":    func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "string") },
 	"CLOB":    func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "string") },
 	"UUID":    func(ct gorm.ColumnType) string { return "datatypes.UUID" },
-	"JSON":    func(ct gorm.ColumnType) string { return "datatypes.JSON" },
-	"JSONB":   func(ct gorm.ColumnType) string { return "datatypes.JSON" },
+	"JSON":    func(ct gorm.ColumnType) string { return "datatypes.JSONMap" },
+	"JSONB":   func(ct gorm.ColumnType) string { return "datatypes.JSONMap" },
 
 	// ---- bytes ----
 	"BLOB": func(gorm.ColumnType) string { return "[]byte" },

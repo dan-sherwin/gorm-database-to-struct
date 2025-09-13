@@ -53,7 +53,8 @@ func TestEndToEndSQLite(t *testing.T) {
 			ts_col TIMESTAMP,
 			numeric_col NUMERIC,
 			decimal_col DECIMAL,
-			duration_col DURATION
+			duration_col DURATION,
+			json_col JSONB
 		);`,
 		// second table to exercise relation via ExtraFields (one-to-many)
 		`CREATE TABLE IF NOT EXISTS child (
@@ -172,19 +173,22 @@ Sqlitedbpath = %q
 import (
   "fmt"
   "time"
+  "gorm.io/datatypes"
   g "%s/%s"
   m "%s/%s/models"
 )
 func main(){
   g.DbInit(%q)
   // Insert
-  a := &m.%s{BoolCol: ptrBool(true), Tiny1: ptrStr("1"), IntCol: ptrI64(42), BigCol: ptrI64(4200), RealCol: ptrF64(1.5), DoubleCol: ptrF64(2.5), FloatCol: ptrF32(3.5), TextCol: ptrStr("hello"), VarcharCol: ptrStr("v"), CharCol: ptrStr("c"), BlobCol: ptrBytes([]byte{1,2,3}), DateCol: ptrTime(1700000000), DatetimeCol: ptrTime(1700000100), TsCol: ptrTime(1700000200), NumericCol: ptrF64(10.5), DecimalCol: ptrF64(20.5), DurationCol: ptrDur(1234567890)}
+  js := datatypes.JSONMap(map[string]any{"a": 1, "b": 2})
+  a := &m.%s{BoolCol: ptrBool(true), Tiny1: ptrStr("1"), IntCol: ptrI64(42), BigCol: ptrI64(4200), RealCol: ptrF64(1.5), DoubleCol: ptrF64(2.5), FloatCol: ptrF32(3.5), TextCol: ptrStr("hello"), VarcharCol: ptrStr("v"), CharCol: ptrStr("c"), BlobCol: ptrBytes([]byte{1,2,3}), DateCol: ptrTime(1700000000), DatetimeCol: ptrTime(1700000100), TsCol: ptrTime(1700000200), NumericCol: ptrF64(10.5), DecimalCol: ptrF64(20.5), DurationCol: ptrDur(1234567890), JSONCol: &js}
   if err := g.DB.Create(a).Error; err != nil { panic(err) }
   // Read
   var got m.%s
   if err := g.DB.First(&got, a.ID).Error; err != nil { panic(err) }
   // Update each field
   b := false
+  jsu := datatypes.JSONMap(map[string]any{"c": 3, "d": 4})
   if err := g.DB.Model(&got).Updates(map[string]any{
     "bool_col": &b,
     "tiny1": ptrStr("0"),
@@ -203,6 +207,7 @@ func main(){
     "numeric_col": ptrF64(11.5),
     "decimal_col": ptrF64(21.5),
     "duration_col": ptrDur(987654321),
+    "json_col": &jsu,
   }).Error; err != nil { panic(err) }
   var after m.%s
   if err := g.DB.First(&after, a.ID).Error; err != nil { panic(err) }

@@ -44,7 +44,11 @@ func sqliteToGorm(cfg ConversionConfig) {
 	// JSON tag strategy same as Postgres generator
 	g.WithJSONTagNameStrategy(func(col string) (tag string) { return strcase.ToLowerCamel(col) })
 	// Use SQLite-specific type map (no Postgres materialized views handling)
-	g.WithDataTypeMap(sqlitetype.TypeMap)
+	dtMaps := sqlitetype.TypeMap
+	for k, v := range cfg.TypeMap {
+		dtMaps[k] = func(columnType gorm.ColumnType) string { return v }
+	}
+	g.WithDataTypeMap(dtMaps)
 	g.WithImportPkgPath("gorm.io/datatypes")
 	g.UseDB(db)
 
